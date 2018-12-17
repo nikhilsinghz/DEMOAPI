@@ -1,0 +1,92 @@
+package com.qa.tests;
+
+import org.json.JSONObject;
+import org.testng.annotations.Test;
+import static io.restassured.RestAssured.given;
+
+
+import static org.hamcrest.Matchers.equalTo;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.http.Cookies;
+import io.restassured.http.Header;
+import io.restassured.http.Headers;
+import io.restassured.parsing.Parser;
+import io.restassured.path.json.JsonPath;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
+
+
+public class LoginFlow {
+	
+	String BaseUrl = "http://35.157.221.79:5000";
+	String ReturnUrl = ("/connect/authorize/callback?client_id=zelfstroomapp&scope=openid profile roles_gateway_rights offline_access userId&response_type=code&redirect_uri=nl.zelfstroom.app://callback&response_mode=form_post&state=30906730-14d1-4083-ac3b-b763dd528acd&code_challenge=qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es&code_challenge_method=S256");
+    String LocationUrl = null;
+    Map<String, String> LoginCookies;
+    
+	
+	@Test(priority = 1)
+	public void loginPost() {
+		RestAssured.baseURI = BaseUrl;
+
+		Response res = RestAssured.given()
+				.redirects().max(12).redirects().follow(true).
+				param("button", "login").
+				param("Username", "Han").
+				param("Password", "Vermolen").
+				param("ReturnUrl", ReturnUrl).
+			when()
+				.post("/account/login").then().assertThat().statusCode(302).extract().response(); // Expected status code is "302", URL will redirect and set to callback url
+		
+		String responseStringLogin = res.asString();
+		System.out.println(responseStringLogin);
+		
+		LoginCookies = res.getCookies();		
+		
+		RestAssured.requestSpecification = new RequestSpecBuilder().addCookies(LoginCookies).build();
+		
+		System.out.println("login post status code" + res.statusCode());																						
+		LocationUrl = res.getHeader("Location");
+		System.out.println(LocationUrl);
+		String encodeURL=encode(LocationUrl);  
+		
+		System.out.println(encodeURL);
+		System.out.println();
+		System.out.println(LoginCookies);
+		
+		Response res2 = given()
+				.cookies(LoginCookies)
+				.param("redirect_uri" , "nl.zelfstroom.app://callback")
+				.param("client_id", "zelfstroomapp")
+				.param("scope" , "openid profile roles gateway_rights userId offline_access")
+				.param("response_type" , "code")
+				.param("response_mode", "form_post")
+				.param("state","30906730-14d1-4083-ac3b-b763dd528acd")
+				.param("code_challenge", "qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es")
+				.param("code_challenge_method", "S256")
+				.when().get("/connect/authorize/callback")
+			    .then().assertThat().statusCode(200).extract().response();
+		
+		System.out.println("Generate code status code" + res2.statusCode());
+		
+		System.out.println("Res2 COMEBACK" + res2.getBody().asString());
+	}
+	
+	public static String encode(String url)  
+    {  
+              try {  
+                   String encodeURL=URLEncoder.encode(url, "UTF-8" );  
+                   return encodeURL;  
+              } catch (UnsupportedEncodingException e) {  
+                   return "Issue while encoding" +e.getMessage();  
+              }  
+    }
+}
