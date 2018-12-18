@@ -1,0 +1,8 @@
+cmd command to create maven project :- mvn archetype:generate -DgroupId=RestAPITest -DartifactId=RestApiTest -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+Integrate Maven with eclipse  :- mvn eclipse:eclipse 
+
+Dummy project 
+AppiumTest.java
+AppTest.java
+RestAPiTest.java
+SeleniumTest.java
